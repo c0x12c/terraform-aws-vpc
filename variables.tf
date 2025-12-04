@@ -81,3 +81,15 @@ variable "custom_acls" {
   }))
   default = null
 }
+
+variable "private_subnet_tags" {
+  description = "A map of tags to assign to the private subnets."
+  type        = map(string)
+  default     = {}
+}
+
+variable "public_subnet_tags" {
+  description = "A map of tags to assign to the public subnets."
+  type        = map(string)
+  default     = {}
+}

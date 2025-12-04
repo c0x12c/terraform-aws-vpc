@@ -73,7 +73,8 @@ resource "aws_subnet" "private" {
     },
     var.created_managed_node_group ? {
       for cluster in var.cluster_names : "kubernetes.io/cluster/${cluster}" => "shared"
-    } : {}
+    } : {},
+    var.private_subnet_tags
   )
 }
 
@@ -89,9 +90,12 @@ resource "aws_subnet" "public" {
   availability_zone       = "${var.region}${element(var.availability_zone_postfixes, count.index)}"
   map_public_ip_on_launch = true
 
-  tags = {
-    Name = "${var.name}-public-subnet-${format("%03d", count.index + 1)}"
-  }
+  tags = merge(
+    {
+      Name = "${var.name}-public-subnet-${format("%03d", count.index + 1)}"
+    },
+    var.public_subnet_tags
+  )
 }
 
 /*
