@@ -1,6 +1,7 @@
 locals {
-  private_cidr_blocks = cidrsubnet(var.cidr_block, 2, 0)
-  public_cidr_blocks  = cidrsubnet(var.cidr_block, 2, 1)
+  private_cidr_blocks  = cidrsubnet(var.cidr_block, 2, 0)
+  public_cidr_blocks   = cidrsubnet(var.cidr_block, 2, 1)
+  database_cidr_blocks = cidrsubnet(var.cidr_block, 2, 2)
 }
 
 /*
@@ -158,6 +159,61 @@ resource "aws_route_table_association" "public" {
   count          = length(var.availability_zone_postfixes)
   subnet_id      = aws_subnet.public[count.index].id
   route_table_id = aws_route_table.public.id
+}
+
+/*
+aws_subnet creates database subnets within the VPC for RDS/database resources.
+https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/subnet
+*/
+resource "aws_subnet" "database" {
+  count = var.create_database_subnets ? length(var.availability_zone_postfixes) : 0
+
+  vpc_id            = aws_vpc.this.id
+  cidr_block        = var.create_custom_subnets ? element(var.custom_database_subnets, count.index) : cidrsubnet(local.database_cidr_blocks, 8, count.index)
+  availability_zone = "${var.region}${element(var.availability_zone_postfixes, count.index)}"
+
+  tags = {
+    Name = "${var.name}-database-subnet-${format("%03d", count.index + 1)}"
+  }
+}
+
+/*
+aws_route_table creates a routing table for database subnets (isolated, no internet access by default).
+https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route_table
+*/
+resource "aws_route_table" "database" {
+  count  = var.create_database_subnets ? 1 : 0
+  vpc_id = aws_vpc.this.id
+
+  tags = {
+    Name = "${var.name}-routing-table-database"
+  }
+}
+
+/*
+aws_route_table_association associates database subnets with the database route table.
+https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route_table_association
+*/
+resource "aws_route_table_association" "database" {
+  count          = var.create_database_subnets ? length(var.availability_zone_postfixes) : 0
+  subnet_id      = aws_subnet.database[count.index].id
+  route_table_id = aws_route_table.database[0].id
+}
+
+/*
+aws_db_subnet_group provides an RDS DB subnet group resource using database subnets.
+https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/db_subnet_group
+*/
+resource "aws_db_subnet_group" "database" {
+  count = var.create_database_subnets ? 1 : 0
+
+  name        = "${var.name}-database"
+  description = "${var.name} database subnet group"
+  subnet_ids  = aws_subnet.database[*].id
+
+  tags = {
+    Name = "${var.name}-database-subnet-group"
+  }
 }
 
 /*

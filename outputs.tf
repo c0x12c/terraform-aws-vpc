@@ -32,3 +32,28 @@ output "public_route_table_id" {
   description = "The public route table ID"
   value       = aws_route_table.public.id
 }
+
+output "subnet_database" {
+  description = "The database subnet information"
+  value       = try(aws_subnet.database, null)
+}
+
+output "database_subnet_ids" {
+  description = "List of database subnet IDs"
+  value       = try(aws_subnet.database[*].id, null)
+}
+
+output "database_route_table_id" {
+  description = "The database route table ID"
+  value       = try(aws_route_table.database[0].id, null)
+}
+
+output "database_subnet_group_name" {
+  description = "The name of the database subnet group"
+  value       = try(aws_db_subnet_group.database[0].name, null)
+}
+
+output "database_subnet_group_id" {
+  description = "The ID of the database subnet group"
+  value       = try(aws_db_subnet_group.database[0].id, null)
+}

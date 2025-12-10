@@ -42,6 +42,18 @@ variable "custom_private_subnets" {
   default     = []
 }
 
+variable "create_database_subnets" {
+  description = "Whether to create dedicated database subnets."
+  type        = bool
+  default     = false
+}
+
+variable "custom_database_subnets" {
+  description = "List of custom database subnets."
+  type        = list(string)
+  default     = []
+}
+
 variable "create_flow_log" {
   description = "Whether to create VPC flow logs."
   type        = bool
